@@ -39,11 +39,11 @@ function knownAddresses ()
    end
 end
 
-local function dialHandler (dial_args)
-   if (#dial_args ~= 1) then
+local function dialHandler (hargs)
+   if (#hargs ~= 1) then
       log.error("'dial' expects one argument: the name of a Stargate, or a Stargate address.")
    else
-      local address = knownAddresses()[args[2]] or args[2]
+      local address = knownAddresses()[hargs[1]] or hargs[1]
       local status = sg.dial(address)
       if (status) then
 	 log.info("Dialing failed!")
@@ -54,8 +54,8 @@ local function dialHandler (dial_args)
    end
 end
 
-local function disconnectHandler (disconnect_args)
-   if (#disconnect_args ~= 0) then
+local function disconnectHandler (hargs)
+   if (#hargs ~= 0) then
       log.error("'disconnect' expects zero arguments.")
    else
       local status = sg.disconnect()
@@ -68,15 +68,15 @@ local function disconnectHandler (disconnect_args)
    end
 end
 
-local function addressHandler (address_args)
+local function addressHandler (hargs)
    log.notImplemented()
 end
 
-local function infoHandler (info_args)
+local function infoHandler (hargs)
    log.notImplemented()
 end
 
-local function helpHandler (help_args)
+local function helpHandler (hargs)
    log.notImplemented()
 end
 
@@ -89,22 +89,14 @@ commands = {dial={handler=dialHandler},
 
 local function main(args)
    local command = args[1]
-   local command_args = arraylib.slice(args, 2)
-
-   if (command == nil) then return nil end
-
-   if (command == "dial") then
-      dialHandler(command_args)
-   elseif (command == "disconnect") then
-      disconnectHandler(command_args)
-   elseif (command == "address") then
-      addressHandler(command_args)
-   elseif (command == "info") then
-      infoHandler(command_args)
-   elseif (command == "help") then
-      helpHandler(command_args)
+   local handler = commands[command]
+   local handler_args = arraylib.slice(args, 2)
+   if (not command) then
+      return nil
+   elseif (not handler) then
+      log.error("Invalid command.  Try 'stargate help' for valid commands.")
    else
-      log.error("Invalid argument. Try 'stargate help' for valid commands.")
+      handler(handler_args)
    end
 end
 
