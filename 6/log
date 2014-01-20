@@ -1,0 +1,17 @@
+-- -*- mode:lua -*-
+
+function error (msg)
+   print("ERROR: ", msg)
+end
+
+function warning (msg)
+   print("WARNING: ", msg)
+end
+
+function info (msg)
+   print("INFO: ", msg)
+end
+
+function notImplemented ()
+   error("Not Implemented.")
+end

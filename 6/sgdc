@@ -1,0 +1,7 @@
+os.loadAPI("stargate")
+
+local function main()
+  stargate.sg.disconnect()
+end
+
+main()

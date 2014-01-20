@@ -1,0 +1,7 @@
+local argv = {...}
+
+local function main ()
+  os.loadAPI("ptable")
+end
+
+main()

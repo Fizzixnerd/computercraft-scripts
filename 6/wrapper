@@ -1,0 +1,11 @@
+function wrapRemote(modem, remote_id)
+  local remote_peripheral = {}
+  local methods = modem.getMethodsRemote(remote_id)
+  for _,method_name in ipairs(methods) do
+    remote_peripheral[method_name] = function (...)
+      local args = {...}
+      return modem.callRemote(remote_id, method_name, unpack(args))
+    end
+  end
+  return remote_peripheral
+end

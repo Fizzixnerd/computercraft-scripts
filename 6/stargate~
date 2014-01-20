@@ -1,0 +1,82 @@
+-- -*- mode:lua -*-
+os.loadAPI("main_modem")
+os.loadAPI("wrapper")
+os.loadAPI("stupid_csv")
+os.loadAPI("error")
+-- in case I ever update the csv file, I don't want to have to change
+-- all the references.
+local csv = stupid_csv
+
+-- This is a csv file containing your known addresses. Each line looks
+-- like: location_name,address_string
+local address_path = "sg_addresses.csv"
+-- get the system's primary peripheral modem
+local net = main_modem.modem
+-- get the arguments passed to the program
+local argv = {...}
+-- adjust this ID for your particular setup
+local stargateID = "stargate_1"
+-- This is the actual stargate handle
+sg = wrapper.wrapRemote(net, stargateID)
+
+function knownAddresses ()
+  -- if the address file doesn't exist, return nothing and report.
+  local result = {}
+  if (not fs.exists(address_path)) then
+    error.warning("Stargate address file " ..
+            address_path .. " DOES NOT EXIST!")
+    return nil
+  elseif (fs.isDir(address_path)) then
+    error.warning("Address directory not implemented yet!")
+    return nil
+  else
+    for address_line in io.lines(address_path) do
+      local parsed_line = csv.parseCSVLine(address_line)
+      result[parsed_line[1]] = parsed_line[2]
+    end
+    return result
+  end
+end
+
+local function main()
+  local argc = table.getn(argv)
+  local command = argv[1]
+  if (command == "dial") then
+    if (argc < 2) then
+      error.error("Expected a dialing address.")
+    elseif (argc > 2) then
+      error.error("Too many arguments; expected just a dialing address.")
+    else
+      local address = knownAddresses()[argv[2]] or argv[2]
+      local status = sg.dial(address)
+      if (status) then
+        print("Dialing failed!")
+        error.error(status)
+      else
+        print("Dialing address, please stand back from the Stargate.")
+      end
+    end
+  elseif (command == "disconnect") then
+    if (argc > 1) then
+      error.error("Too many arguments!")
+    else
+      local status = sg.disconnect()
+      if (status) then
+        print("Disconnecting failed!")
+        error.error(status)
+      else
+        print("Disconnecting Stargate.")
+      end
+    end
+  end
+end
+
+local function debug ()
+  os.loadAPI("ptable")
+  ptable.ptable(knownAddresses())
+  ptable.ptable(argv)
+  ptable.ptable(sg)
+  main()
+end
+
+main()

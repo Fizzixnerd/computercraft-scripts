@@ -1,0 +1,112 @@
+-- -*- mode:lua -*-
+os.loadAPI("main_modem")
+os.loadAPI("wrapper")
+os.loadAPI("stupid_csv")
+os.loadAPI("log")
+os.loadAPI("arraylib")
+-- in case I ever update the csv file, I don't want to have to change
+-- all the references.
+local csv = stupid_csv
+
+-- This is a csv file containing your known addresses. Each line looks
+-- like: location_name,address_string
+local address_path = "sg_addresses.csv"
+-- get the system's primary peripheral modem
+local net = main_modem.modem
+-- get the arguments passed to the program
+local argv = {...}
+-- adjust this ID for your particular setup
+local stargateID = "stargate_1"
+-- This is the actual stargate handle
+sg = wrapper.wrapRemote(net, stargateID)
+
+function knownAddresses ()
+   -- if the address file doesn't exist, return nothing and report.
+   local result = {}
+   if (not fs.exists(address_path)) then
+      log.warning("Stargate address file " ..
+		       address_path .. " does not exist.")
+      return nil
+   elseif (fs.isDir(address_path)) then
+      log.warning("Address directory not implemented yet.")
+      return nil
+   else
+      for address_line in io.lines(address_path) do
+	 local parsed_line = csv.parseCSVLine(address_line)
+	 result[parsed_line[1]] = parsed_line[2]
+      end
+      return result
+   end
+end
+
+local function dialHandler (dial_args)
+   if (#dial_args != 1) then
+      log.error("`dial' expects one argument: the name of a Stargate, or a Stargate address.")
+   else
+      local address = knownAddresses()[args[2]] or args[2]
+      local status = sg.dial(address)
+      if (status) then
+	 log.info("Dialing failed!")
+	 log.error(status)
+      else
+	 log.info("Dialing address.  Please stand back from the Stargate.")
+      end
+   end
+end
+
+local function disconnectHandler (disconnect_args)
+   if (#disconnect_args != 0) then
+      log.error("`disconnect' expects zero arguments.")
+   else
+      local status = sg.disconnect()
+      if (status) then
+	 print("Disconnecting failed!")
+	 log.error(status)
+      else
+	 print("Disconnecting Stargate.")
+      end
+   end
+end
+
+local function addressHandler (address_args)
+   log.notImplemented()
+end
+
+local function infoHandler (info_args)
+   log.notImplemented()
+end
+
+local function helpHandler (help_args)
+   log.notImplemented()
+end
+
+local function main(args)
+   local command = args[1]
+   local command_args = arraylib.slice(args, 2)
+
+   if (command == nil) then return nil end
+
+   if (command == "dial") then
+      dialHandler(command_args)
+   elseif (command == "disconnect") then
+      disconnectHandler(command_args)
+   elseif (command == "address") then
+      addressHandler(command_args)
+   elseif (command == "info") then
+      infoHandler(command_args)
+   elseif (command == "help") then
+      helpHandler(command_args)
+   else
+      log.error("Invalid argument. Try `stargate help' for valid commands.")
+   end
+end
+
+local function debug ()
+   os.loadAPI("ptable")
+   ptable.ptable(knownAddresses())
+   ptable.ptable(argv)
+   ptable.ptable(sg)
+   main(argv)
+end
+
+main(argv)

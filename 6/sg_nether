@@ -1,0 +1,21 @@
+os.loadAPI("stargate")
+
+local function dialNether ()
+  return stargate.sg.dial(stargate.sg.address.nether_fortress)
+end
+
+local function main ()
+  local debug_info = dialNether()
+  print(debug_info)
+  sleep(25)
+  debug_info = stargate.sg.disconnect()
+  print(debug_info)
+end
+
+local function debug ()
+  os.loadAPI("ptable")
+  ptable.ptable(stargate.sg)
+  stargate.sg.disconnect()
+end
+
+main()

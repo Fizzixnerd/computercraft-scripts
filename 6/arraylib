@@ -1,0 +1,22 @@
+-- -*- mode:lua -*-
+-- Taken from snippets.luacode.org/?p=snippets/Table_Slice_116
+-- by: steved
+-- MIT License
+function slice (tbl, from_i, including_j)
+   local result = {}
+   local n = #tbl
+   from_i = from_i or 1
+   including_j = including_j or n
+   if including_j < 0 then
+      including_j = n + including_j + 1
+   elseif including_j > n then
+      including_j = n
+   end
+   if from_i < 1 or from_i > n then return {} end
+   local k = 1
+   for i = from_i, including_j do
+      result[k] = tbl[i]
+      k = k + 1
+   end
+   return result
+end

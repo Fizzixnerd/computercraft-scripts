@@ -1,0 +1,7 @@
+function error (msg)
+  print ("ERROR: ", msg)
+end
+
+function warning (msg)
+  print ("WARNING: ", msg)
+end
