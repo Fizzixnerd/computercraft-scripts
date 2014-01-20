@@ -60,10 +60,10 @@ local function disconnectHandler (hargs)
    else
       local status = sg.disconnect()
       if (status) then
-	 print("Disconnecting failed!")
+	 log.info("Disconnecting failed!")
 	 log.error(status)
       else
-	 print("Disconnecting Stargate.")
+	 log.info("Disconnecting Stargate.")
       end
    end
 end
