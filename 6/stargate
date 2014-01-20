@@ -41,7 +41,7 @@ end
 
 local function dialHandler (dial_args)
    if (#dial_args ~= 1) then
-      log.error("`dial' expects one argument: the name of a Stargate, or a Stargate address.")
+      log.error("'dial' expects one argument: the name of a Stargate, or a Stargate address.")
    else
       local address = knownAddresses()[args[2]] or args[2]
       local status = sg.dial(address)
@@ -56,7 +56,7 @@ end
 
 local function disconnectHandler (disconnect_args)
    if (#disconnect_args ~= 0) then
-      log.error("`disconnect' expects zero arguments.")
+      log.error("'disconnect' expects zero arguments.")
    else
       local status = sg.disconnect()
       if (status) then
@@ -104,7 +104,7 @@ local function main(args)
    elseif (command == "help") then
       helpHandler(command_args)
    else
-      log.error("Invalid argument. Try `stargate help' for valid commands.")
+      log.error("Invalid argument. Try 'stargate help' for valid commands.")
    end
 end
 
