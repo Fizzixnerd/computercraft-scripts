@@ -89,7 +89,7 @@ commands = {dial={handler=dialHandler},
 
 local function main(args)
    local command = args[1]
-   local handler = commands[command]
+   local handler = commands[command].handler
    local handler_args = arraylib.slice(args, 2)
    if (not command) then
       return nil
