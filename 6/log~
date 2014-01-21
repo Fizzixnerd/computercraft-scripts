@@ -12,7 +12,7 @@ function info (msg)
    print("INFO: ", msg)
 end
 
-function output (msg)
+function print (msg)
    print(msg)
 end
 
