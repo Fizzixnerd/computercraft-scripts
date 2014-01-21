@@ -1,0 +1,6 @@
+-- -*- mode:lua -*-
+os.loadAPI("log")
+
+function runProgram (program, args)
+   log.notImplemented()
+end
