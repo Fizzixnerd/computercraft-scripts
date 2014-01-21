@@ -53,6 +53,11 @@ local function dialHandler (hargs)
       end
    end
 end
+local dial_usage = "dial {<address> | <name>}"
+local dial_doc =
+" @ Open a wormhole to a remote Stargate.\n\
+  * '<address>' is a 7 character Stargate address.\n\
+  * '<name>' is the name of a saved Stargate address."
 
 local function disconnectHandler (hargs)
    if (#hargs ~= 0) then
@@ -67,29 +72,85 @@ local function disconnectHandler (hargs)
       end
    end
 end
+local disconnect_usage = "{disconnect | dc}"
+local disconnect_doc = 
+" @ Close your Stargate.\n\
+  * Even works when you are the receiver and the config prevents receivers from closing the connection.  This may change."
 
 local function addressHandler (hargs)
    log.notImplemented()
 end
+local address_usage = 
+"{address | addr} {add <name> <address> |\n\
+                   list |\n\
+                   rename <old_name> <new_name> |\n\
+                   remove <name>}"
+local address_doc =
+" @ Easily manipulate your saved addresses.\n\
+  * Addresses are saved in the file 'sg_addresses.csv'.\n\
+  * 'add' adds a new address identified by <name> with 7 character address <address>.\n\
+  * 'list' lists the names and addresses of your saved Stargate addresses.\n\
+  * 'rename' renames a saved address from <old_name> to <new_name>.\n\
+  * 'remove' permanently removes the address identified by <name> from your saved addresses.  You can of course add the address back later using 'add'."
 
 local function infoHandler (hargs)
    log.notImplemented()
 end
+local info_usage = ""
+local info_doc = ""
 
 local function helpHandler (hargs)
    log.notImplemented()
 end
+local help_usage = "help [usage]"
+local help_summary = "Display this help message."
+local help_doc = "With 'usage', only displays the usage information."
 
-commands = {dial={handler=dialHandler},
-	    disconnect={handler=disconnectHandler},
-	    address={handler=addressHandler},
-	    info={handler=infoHandler},
-	    help={handler=helpHandler}}
-	    
+program =
+   {name = "stargate",
+    help =
+       {usage = true,
+	summary = true,
+	long_help = "Easily control your Stargate."},
+    commands = 
+       {dial = 
+	   {handler = dialHandler,
+	    help =
+	       {usage = dial_usage,
+		summary = dial_summary,
+		long_help = dial_doc}},
+	disconnect =
+	   {handler = disconnectHandler,
+	    help =
+	       {usage = disconnect_usage,
+		summary = disconnect_summary,
+		long_help = disconnect_doc}},
+	address =
+	   {handler = addressHandler,
+	    help =
+	       {usage = address_usage,
+		summary = address_summary,
+		long_help = address_doc}},
+	info =
+	   {handler = infoHandler,
+	    help =
+	       {usage = info_usage,
+		summary = info_summary,
+		long_help = info_doc}},
+	help =
+	   {handler = helpHandler,
+	    help =
+	       {usage = help_usage,
+		summary = help_summary,
+		long_help = help_doc}}}}
+
+-- aliases for common commands
+program.commands.dc = program.commands.disconnect
+program.commands.addr = program.commands.address
 
 local function main(args)
    local command = args[1]
-   local handler = commands[command].handler
+   local handler = program.commands[command] and program.commands[command].handler
    local handler_args = arraylib.slice(args, 2)
    if (not command) then
       return nil
