@@ -1,6 +1,70 @@
 -- -*- mode:lua -*-
 os.loadAPI("log")
 
+-- A 'program' table is a 'command' table.
+--
+-- program := <command (command)>;
+
+-- A 'command' table contains:
+-- a 'name' string; and
+-- an optional 'help' table; and either:
+--   a function 'handler' which accepts a single array argument; xor
+--   a 'commands' table.
+--
+-- command :=
+--   {name = <command_name (string)>,
+--    handler = <handler (function)>,
+--    [help = <help (help)>]}
+--   |
+--   {name = <command_name (string)>,
+--    commands = <commands (commands)>,
+--    [help = <help (help)>]}
+
+-- A 'commands' table contains one or more 'command' tables.
+-- 
+-- commands :=
+--   {<command_name> (string)> = <command (command)>,
+--    [...]}
+
+-- A 'help' table contains:
+--   usage - the syntax of the command (string).
+--   summary - a sentence describing the command (string).
+--   long_help - an array of zero or more sentences (strings)
+--               describing the command/program and it's subcommands
+--               in more detail.
+--
+-- help :=
+--   {usage = <syntax (string)>,
+--    summary = <sentence (string)>,
+--    long_help = {[<sentence (string)>, [...]]}}
+
+-- An 'error_stack' table contains:
+-- an optional 'next' error_stack table; and:
+--   a 'command' string naming the command; and
+--   an 'error' string explaining the error;
+--
+-- error_stack :=
+--   {command = <command_name (string)>,
+--    error = <explanation (string)>,
+--    [next = <next_error (error_stack)>]}
+
 function runProgram (program, args)
-   log.notImplemented()
+   -- Executes the table 'table' (structure described above) with the
+   -- array of string arguments 'args'.
+   if error_string then
+      log.error(
+end
+
+function runCommand (command, args)
+   if (command.handler) then
+      return command.handler(args)
+   elseif (command.commands) then
+      if (#args < 1) then
+	 log.error("")
+      else
+	 if (command.commands[args[1]]) then
+	    command.commands[args[1]](arraylib.slice(args, 2))
+	 else
+	    return "Invalid command '" .. args[1] .. "'."
+   
 end
