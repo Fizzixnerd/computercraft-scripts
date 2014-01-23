@@ -1,5 +1,9 @@
 -- -*- mode:lua -*-
 
+function fatal (msg)
+   print("FATAL PROGRAMMING ERROR: ", msg)
+end
+
 function error (msg)
    print("ERROR: ", msg)
 end
@@ -17,5 +21,10 @@ function output (msg)
 end
 
 function notImplemented ()
-   error("Not Implemented.")
+   fatal("This functionality is not implemented.")
+end
+
+function UNREACHABLE (debug_string)
+   debug_string = debug_string or ""
+   fatal("This line should never print.  If it does, you have broken something _BADLY_.  Your debug string is: %s")
 end
