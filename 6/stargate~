@@ -126,7 +126,11 @@ program =
 		summary = disconnect_summary,
 		long_help = disconnect_doc}},
 	address =
-	   {handler = addressHandler,
+	   {commands =
+	       {add = {handler = log.notImplemented},
+		remove = {handler = log.notImplemented},
+		rename = {handler = log.notImplemented},
+		list = {handler = log.notImplemented}},
 	    help =
 	       {usage = address_usage,
 		summary = address_summary,

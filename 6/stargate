@@ -19,6 +19,7 @@ local argv = {...}
 local stargateID = "stargate_1"
 -- This is the actual stargate handle
 sg = wrapper.wrapRemote(net, stargateID)
+sg.timeout = 40
 
 function knownAddresses ()
    -- if the address file doesn't exist, return nothing and report.
@@ -50,6 +51,8 @@ local function dialHandler (hargs)
 	 log.error(status)
       else
 	 log.info("Dialing address.  Please stand back from the Stargate.")
+	 sleep(sg.timeout)
+	 sg.disconnect()
       end
    end
 end
