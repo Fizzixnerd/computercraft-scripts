@@ -1,6 +1,145 @@
 -- -*- mode:lua -*-
 os.loadAPI("log")
+os.loadAPI("arraylib")
+os.loadAPI("class")
+
+-- A 'program' table is a 'command' table. The differentiation is
+-- purely convention, at this point.  This may change in the future.
+--
+-- program := <command (command)>
+
+-- A 'command' table contains:
+--   * 'name' string naming the command.
+--   * 'help' help table (optional).
+--   * Exactly one of:
+--      * 'handler' function which accepts a single array argument.
+--      * 'commands' commands table with subcommands.
+--
+-- command :=
+--   {name = <command_name (string)>,
+--    handler = <handler (function)>,
+--    [help = <help_table (help)>]}
+--   |
+--   {name = <command_name (string)>,
+--    commands = <commands (commands)>,
+--    [help = <help_table (help)>]}
+
+-- A 'commands' table contains one or more 'command' tables.
+-- 
+-- commands :=
+--   {<command_name> (string)> = <command (command)>,
+--    [...]}
+
+-- A 'help' table contains:
+--   * 'usage' string containing the syntax of the command.
+--   * 'summary' string sentence describing the command.
+--   * 'long_help' array of strings containing zero or more sentences
+--       describing the command/program in more detail.
+--
+-- help :=
+--   {usage = <syntax (string)>,
+--    summary = <sentence (string)>,
+--    long_help = {[<sentence (string)>, [...]]}}
+
+-- A 'CommandStack' table contains:
+--   * 'next_frame' (optional) CommandStack table containing errors deeper in the
+--       call stack.
+--   * 'action' (optional) string with one of the following values:
+--       "usage" -- prints the usage information for the failing command.
+--       "summary" -- prints the summary information for the failing command.
+--       "long_help" -- prints the full documentation for the failing command.
+--   * 'command' string naming the command at this level of the call.
+--   * 'msg' string explaining the error; empty if no useful information.
+--
+-- error :=
+--   {command = <command_name (string)>,
+--    msg = <error_message (string)>,
+--    [next_frame = <next_frame (CommandStack)>,]
+--    [action = "usage" | "summary" | "long_help"]}
+
+Help = class.define(function (obj, usage, summary, long_help)
+		       obj.usage = usage or ""
+		       obj.summary = summary or ""
+		       obj.long_help = long_help or {}
+		       return obj
+		    end
+)
+
+Command = class.define(function (obj, name, commands_or_handler, help)
+			  obj.name = name or ""
+			  obj.help = help or Help()
+			  if (type(commands_or_handler) == "table") then
+			     obj.handler = nil
+			     obj.commands = commands_or_handler
+			  elseif (type(commands_or_handler) == "function") then
+			     obj.handler = commands_or_handler
+			     obj.commands = nil
+			  else
+			     log.fatal("You made a command without a handler function or a commands table.")
+			  end
+			  return obj
+		       end
+)
+
+Commands = class.define(function (obj, ...)
+			   for name, command in ipairs({...}) do
+			      if (type(name) ~= "string") then
+				 log.fatal("You made a commands table with a non-string name.")
+				 return nil
+			      elseif (type(command) ~= "table") then
+				 log.fatal("You gave a command that isn't even a table.")
+				 return nil
+			      elseif (not (command.name and (command.handler oor command.commands) and command.help)) then
+				 log.fatal("You gave a command which lacks at least one of the required values.")
+				 return nil
+			      else
+				 -- everything looks okay!
+				 obj[name] = command
+			      end
+			   end
+			   return obj
+			end
+)
+
+CommandStack = class.define(function (obj, command, msg, next_frame
+			  
+
 
 function runProgram (program, args)
+   -- Executes the table 'program' (structure described above) with the
+   -- array of string arguments 'args'.
    log.notImplemented()
+end
+
+function runCommand (command, args)
+   if (command.handler) then
+      return CommandStack(command.name, "", command.handler(args), nil)
+   elseif (command.commands) then
+      if (#args < 1) then
+	 local msg = string.format("Too few arguments; %q expects a subcommand.",
+				   command.name)
+	 local action = "usage"
+	 return CommandStack(command.name, msg, nil, action)
+      else
+	 local subcommand = command.commands[args[1]]
+	 if (subcommand) then
+	    -- Run the subcommand with the rest of the arguments
+	    return newError(command.name,
+			    "",
+			    runCommand(subcommand, arraylib.slice(args, 2)),
+			    nil)
+	 else
+	    -- given subcommand does not exist.
+	    local msg = string.format("Invalid command: %q.", args[1])
+	    local action = "usage"
+	    return newError(command.name, msg, nil, action)
+	 end
+      end
+   else
+      -- command is broken! It doesn't have a handler or a commands table.
+      local msg = string.format("The %q command is broken; this is a programming error.  It must contain either a 'handler' function or a 'commands' table.",
+				command.name)
+      return newError(command.name, msg, nil, nil)
+   end
+   log.UNREACHABLE(command.name .. " runCommand")
 end
