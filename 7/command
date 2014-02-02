@@ -1,0 +1,220 @@
+-- A 'program' table is a 'command' table.  The difference arises in
+-- that :execute()-ing a program will unwind the CommandStack
+-- afterwards.
+--
+-- program := <command (command)>
+
+-- A 'command' table contains:
+--   * 'name' string naming the command.
+--   * 'help' help table (optional).
+--   * Exactly one of:
+--      * 'handler' function which accepts a single array argument.
+--      * 'commands' commands table with subcommands.
+--
+-- command :=
+--   {name = <command_name (string)>,
+--    handler = <handler (function)>,
+--    [help = <help_table (help)>]}
+--   |
+--   {name = <command_name (string)>,
+--    commands = <commands (commands)>,
+--    [help = <help_table (help)>]}
+
+-- A 'commands' table contains one or more 'command' tables.
+-- 
+-- commands :=
+--   {<command_name> (string)> = <command (command)>,
+--    [...]}
+
+-- A 'help' table contains:
+--   * 'usage' string containing the syntax of the command.
+--   * 'summary' string sentence describing the command.
+--   * 'long_help' array of strings containing zero or more sentences
+--       describing the command/program in more detail.
+--
+-- help :=
+--   {usage = <syntax (string)>,
+--    summary = <sentence (string)>,
+--    long_help = {[<sentence (string)>, [...]]}}
+
+-- A 'CommandStack' table contains:
+--   * 'next_frame' (optional) CommandStack table containing errors deeper in the
+--       call stack.
+--   * 'action' (optional) method function with signature 'function (self) ... end' which is called on the CommandStack while unwinding the stack.
+--       * includes 3 standard actions: 'actions.usage', 'actions.summary', and 'actions.long_help', which print to stdout the respective command information.
+--   * 'command' Command object designating the command at this level of the call.
+--
+-- command_stack :=
+--   {command_name = <command_name (string)>,
+--    [next_frame = <next_frame (CommandStack)>,]
+--    [action = <action_function (function)> | nil}
+
+-- Class Definitions
+Help = class.define(function (obj, usage, summary, long_help)
+		       obj.usage = usage or ""
+		       obj.summary = summary or ""
+		       obj.long_help = long_help or {}
+		       return obj
+		    end
+)
+
+Command = class.define(function (obj, name, commands_or_handler, help)
+			  obj.name = name or ""
+			  obj.help = help or Help()
+			  if (type(commands_or_handler) == "table") then
+			     obj.handler = nil
+			     obj.commands = commands_or_handler
+			  elseif (type(commands_or_handler) == "function") then
+			     obj.handler = commands_or_handler
+			     obj.commands = nil
+			  else
+			     log.fatal("You made a command without a handler function or a commands table.")
+			  end
+			  return obj
+		       end
+)
+
+Program = class.define(Command)
+
+Commands = class.define(function (obj, ...)
+			   for name, command in pairs({...}) do
+			      if type(name) ~= "string" then
+				 log.fatal("You made a commands table with a non-string name.")
+				 return nil
+			      elseif type(command) ~= "table" then
+				 log.fatal("You gave a command that isn't even a table.")
+				 return nil
+			      elseif not (command.name and (command.handler or command.commands) and command.help)) then
+				 log.fatal("You gave a command which lacks at least one of the required values.")
+				 return nil
+			      else
+				 -- everything looks okay!
+				 obj[name] = command
+			      end
+			   end
+			   return obj
+			end
+)
+
+CommandStack = class.define(function (obj, command, next_frame, action)
+			       -- Sanitize inputs.
+			       if command and type(command) ~= "table" then
+				  log.fatal("You gave a command that isn't even a table.")
+				  return nil
+			       elseif (not (command.name and (command.handler or command.commands) and command.help)) then
+				  log.fatal("You gave a command that lacks at least one of the required values.")
+				  return nil
+			       else
+				  obj.command = command
+			       end
+			       
+			       if action and (type(action) ~= "function")
+				  log.fatal("You gave a non-nil action that isn't a function.")
+				  return nil
+			       else
+				  obj.action = action or function(self) return nil end
+			       end
+
+			       obj.next_frame = next_frame
+			       return obj
+			    end
+)
+
+-- common actions that CommandStacks might want to use
+CommandStack.actions = {}
+CommandStack.actions.name =
+   function (self)
+      log.output(self.command.name)
+   end
+
+CommandStack.actions.usage =
+   function (self)
+      self.actions.name(self)
+      if self.command.help.usage ~= "" then
+	 local out = "usage: " .. self.command.help.usage
+	 log.output(out)
+      end
+   end
+
+CommandStack.actions.summary =
+   function (self)
+      self.actions.usage(self)
+      if self.command.help.summary ~= "" then
+	 local out = "  @ " .. self.command.help.summary
+	 log.output(out)
+      end
+   end
+
+CommandStack.actions.longHelp =
+   function (self)
+      self.actions.summary(self)
+      if self.command.help.long_help ~= {} then
+	 for _, line in ipairs(long_help) do
+	    local out = "    * " .. line
+	    log.output(out)
+	 end
+      end
+   end
+
+-- Method definitions
+
+function Command.execute (self, args)
+   -- Executing a Command returns the resulting CommandStack, which
+   -- you can :unwind() at your leisure.
+
+   --  automatic (but overridable) handling of "help" argument to current command
+   if (#args ~= 0)
+      and (self.name ~= "help")
+      and ((args[1] == "help") or (args[1] == "?") or (args[1] == "-h") or
+	      (args[1] == "-?") or (args[1] == "--help") or (args[1] == "halp"))
+   then
+      return CommandStack(self, nil, CommandStack.actions.longHelp)
+   elseif (self.handler) then
+      return CommandStack(self, self.handler(args))
+   elseif (self.commands) then
+      if (#args == 0) then
+	 -- used in the following closure
+	 local notEnoughArguments = function (command_stack)
+	    log.error(string.format("Too few arguments; %q expects a subcommand.", self.name)
+	    actions.usage(command_stack)
+	 end
+	 return CommandStack(self, nil, notEnoughArguments)
+      else
+	 local subcommand = self.commands[args[1]]
+	 if (subcommand) then
+	    -- Run the subcommand with the rest of the arguments
+	    return CommandStack(self, subcommand:execute(arraylib.slice(args, 2)))
+	 else
+	    -- given subcommand does not exist.
+	    local commandDoesNotExist = function (command_stack)
+	       log.error(string.format("Invalid subcommand: %q.", args[1]))
+	       actions.usage(command_stack)
+	    end
+	    return CommandStack(self, nil, commandDoesNotExist)
+	 end
+      end
+   else
+      -- command is broken! It doesn't have a handler or a commands table.
+      local action = function (command_stack)
+	 local msg = string.format("The %q command is broken; this is a programming error."
+				     .. "  It must contain either a 'handler' function or a 'commands' table."
+				     .. "  Refer to the 'easy' API for more information.",
+				   self.name)
+	 log.fatal(msg)
+      end
+      return CommandStack(self, nil, action)
+   end
+   log.UNREACHABLE(command.name .. " Command.execute")
+end
+
+function CommandStack.unwind (self)
+   self:action()
+   if self.next_frame then
+      self.next_frame:unwind()
+   end
+end
+
+function Program.execute(self, args)
+   local command_stack = self._base.execute(self, args)
+   command_stack:unwind()
+end

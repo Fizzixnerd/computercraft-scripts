@@ -1,0 +1,105 @@
+-- -*- mode:lua -*-
+os.loadAPI("easy")
+os.loadAPI("log")
+os.loadAPI("arraylib")
+
+local _error = {}
+
+function _error.expectedNumber (str)
+   return function (self)
+      local out = string.format("Expected a number, got %q instead.", str)
+      log.error(out)
+      easy.CommandStack.actions.usage(self)
+   end
+end
+
+function _error.divisionByZero ()
+   return function (self)
+      local out = "The divisor cannot be zero."
+      log.error(out)
+      easy.CommandStack.actions.summary(self)
+   end
+end
+
+calc =
+   easy.Program(
+      "calc",
+      easy.Commands(
+	 easy.Command(
+	    "+",
+	    function (self, args)
+	       local sum = 0
+	       for _, num_str in ipairs(args) do
+		  local num = tonumber(num_str)
+		  if not num then return easy.CommandStack(self, nil, _error.expectedNumber(num_str)) end
+		  sum = sum + num
+	       end
+	       log.output(sum)
+	    end,
+	    easy.Help(
+	       "+ [<number> [<numbers>...]]",
+	       "Prints the sum of provided numbers.",
+	       {"Prints '0' with no arguments."}
+	    )
+	 ),
+	 easy.Command(
+	    "-",
+	    function (self, args)
+	       local difference = args[1] or 0
+	       for _, num_str in ipairs(arraylib.slice(args, 2)) do
+		  local num = tonumber(num_str)
+		  if not num then return easy.CommandStack(self, nil, _error.expectedNumber(num_str)) end
+		  difference = difference - num
+	       end
+	       log.output(difference)
+	    end,
+	    easy.Help(
+	       "- [<number> [<numbers>...]",
+	       "Prints the difference of provided numbers.",
+	       {"Note that this means '- 5' will print '5', not '-5'.",
+		"Prints '0' with no arguments."}
+	    )
+	 ),
+	 easy.Command(
+	    "*",
+	    function (self, args)
+	       local product = 1
+	       for _, num_str in ipairs(args) do
+		  local num = tonumber(num_str)
+		  if not num then return easy.CommandStack(self, nil, _error.expectedNumber(num_str)) end
+		  product = product * num
+	       end
+	       log.output(product)
+	    end,
+	    easy.Help(
+	       "* [<number> [<numbers>...]]",
+	       "Prints the product of provided numbers.",
+	       {"Prints '1' with no arguments."}
+	    )
+	 ),
+	 easy.Command(
+	    "/",
+	    function (self, args)
+	       local quotient = args[1]
+	       for _, num_str in ipairs(arraylib.slice(args, 2)) do
+		  local num = tonumber(num_str)
+		  if not num then return easy.CommandStack(self, nil, _error.expectedNumber(num_str)) end
+		  quotient = quotient / num
+	       end
+	       log.output(quotient)
+	    end,
+	    easy.Help(
+	       "/ [<number> [<numbers>...]]",
+	       "Prints the quotient of provided numbers.",
+	       {"Prints 1 with no arguments"}
+	    )
+	 )
+      ),
+      easy.Help(
+	 "calc ( + | - | * | / ) [<number> [<numbers>...]]",
+	 "Provides basic arithmetic functions for use on the command-line.",
+	 {}
+      )
+   )
+		      
+calc:execute({...})

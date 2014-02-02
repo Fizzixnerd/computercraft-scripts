@@ -16,7 +16,7 @@ local net = main_modem.modem
 -- get the arguments passed to the program
 local argv = {...}
 -- adjust this ID for your particular setup
-local stargateID = "stargate_1"
+local stargateID = "stargate_2"
 -- This is the actual stargate handle
 sg = wrapper.wrapRemote(net, stargateID)
 sg.timeout = 40
