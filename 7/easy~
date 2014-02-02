@@ -1,4 +1,4 @@
---*- mode:lua -*-
+-- -*- mode:lua -*-
 os.loadAPI("log")
 os.loadAPI("arraylib")
 os.loadAPI("class")
@@ -13,7 +13,9 @@ os.loadAPI("class")
 --   * 'name' string naming the command.
 --   * 'help' help table (optional).
 --   * Exactly one of:
---      * 'handler' function which accepts a single array argument.
+--      * 'handler' function (actually a method) which accepts two arguments:
+--          * 'self' command table calling it.
+--          * 'args' array of arguments.
 --      * 'commands' commands table with subcommands.
 --
 -- command :=
@@ -82,19 +84,20 @@ Command = class.define(function (obj, name, commands_or_handler, help)
 Program = class.define(Command)
 
 Commands = class.define(function (obj, ...)
-			   for name, command in pairs({...}) do
-			      if type(name) ~= "string" then
-				 log.fatal("You made a commands table with a non-string name.")
-				 return nil
-			      elseif type(command) ~= "table" then
+			   -- '...' should all be Command objects.
+			   for _, command in ipairs({...}) do
+			      if type(command) ~= "table" then
 				 log.fatal("You gave a command that isn't even a table.")
 				 return nil
-			      elseif not (command.name and (command.handler or command.commands) and command.help)) then
+			      elseif not (command.name and (command.handler or command.commands) and command.help) then
 				 log.fatal("You gave a command which lacks at least one of the required values.")
+				 return nil
+			      elseif type(command.name) ~= "string" then
+				 log.fatal("You gave a command which has a non-string name.")
 				 return nil
 			      else
 				 -- everything looks okay!
-				 obj[name] = command
+				 obj[command.name] = command
 			      end
 			   end
 			   return obj
@@ -134,7 +137,6 @@ CommandStack.actions.name =
 
 CommandStack.actions.usage =
    function (self)
-      self.actions.name(self)
       if self.command.help.usage ~= "" then
 	 local out = "usage: " .. self.command.help.usage
 	 log.output(out)
@@ -175,7 +177,7 @@ function Command.execute (self, args)
    then
       return CommandStack(self, nil, CommandStack.actions.longHelp)
    elseif (self.handler) then
-      return CommandStack(self, self.handler(args))
+      return self:handler(args)
    elseif (self.commands) then
       if (#args == 0) then
 	 -- used in the following closure

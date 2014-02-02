@@ -116,7 +116,7 @@ CommandStack = class.define(function (obj, command, next_frame, action)
 				  obj.command = command
 			       end
 			       
-			       if action and (type(action) ~= "function")
+			       if action and type(action) ~= "function" then
 				  log.fatal("You gave a non-nil action that isn't a function.")
 				  return nil
 			       else
@@ -156,7 +156,7 @@ CommandStack.actions.longHelp =
    function (self)
       self.actions.summary(self)
       if self.command.help.long_help ~= {} then
-	 for _, line in ipairs(long_help) do
+	 for _, line in ipairs(self.command.help.long_help) do
 	    local out = "    * " .. line
 	    log.output(out)
 	 end
@@ -182,8 +182,8 @@ function Command.execute (self, args)
       if (#args == 0) then
 	 -- used in the following closure
 	 local notEnoughArguments = function (command_stack)
-	    log.error(string.format("Too few arguments; %q expects a subcommand.", self.name)
-	    actions.usage(command_stack)
+	    log.error(string.format("Too few arguments; %q expects a subcommand.", self.name))
+	    CommandStack.actions.usage(command_stack)
 	 end
 	 return CommandStack(self, nil, notEnoughArguments)
       else
@@ -195,7 +195,7 @@ function Command.execute (self, args)
 	    -- given subcommand does not exist.
 	    local commandDoesNotExist = function (command_stack)
 	       log.error(string.format("Invalid subcommand: %q.", args[1]))
-	       actions.usage(command_stack)
+	       CommandStack.actions.usage(command_stack)
 	    end
 	    return CommandStack(self, nil, commandDoesNotExist)
 	 end
