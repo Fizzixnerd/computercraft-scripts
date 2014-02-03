@@ -29,14 +29,15 @@ Thanks to OpenPeripheral, I can wrap my stargate using a couple of modems and so
 
 Command Parsing and Selection
 
-easy will parse the command and subcommand arguments for you, consuming them and leaving you only having to deal with the remaining arguments, which usually are the only ones your command cares about.
+easy will parse the command and subcommand arguments for you, consuming them and leaving you only having to deal with the remaining arguments, which (usually) are the only ones your command cares about.
 
-You define the structure of your program using 3 simple classes: A Command is an object which contains:
-1) a name (string).
-2) either:
-     * a handler function of two variables, `self' and `args' (if this command has no subcommands), or
-     * a Commands object which contains at least one Command object.
-3) an optional Help object (see below).
+You define the structure of your program using 3 simple classes: 
+A Command is an object which contains:
+  1) a name (string).
+  2) either:
+       * a handler function of two variables, `self' and `args' (if this command has no subcommands), or
+       * a Commands object which contains at least one Command object.
+  3) an optional Help object (see below).
 The Program class actually inherits from Command, and thus have the same structure: either a handler function or a Commands object containing further sub-Command objects.  Commands and Programs differ in how they perform the :execute() method -- specifically how they deal with errors (see below).
 
 Thus, the structure of a `stargate' program as described above could be defined something like:
@@ -110,7 +111,12 @@ Okay, cool!  If this was all easy did, it would basically be a glorified parser.
 
 Documenting Commands and User Errors
 
-easy also contains a Help class to allow you to easily document your programs in a uniform manner, and which easy will use to help your users automatically in common situations.  You can also tell easy how to handle user errors specific to your program.  easy, however, cannot (at this time) help you deal with _programming_ errors gracefully, so test your code.
+easy also contains a Help class to allow you to easily document your programs in a uniform manner, and which easy will use to help your users automatically in common situations.  You can also tell easy how to handle user errors specific to your program.  easy, however, cannot (at this time) help you deal with _programming_ errors gracefully, so test your code!
+
+A Help object consists of 3 fields:
+  1) `usage' string describes the syntax of the command.
+  2) `summary' string is a one sentence summary of the command.
+  3) `long_help' is an array of zero or more strings which should be additional sentences outlining extra information about the command, such as default behaviour, corner cases, expected forms of arguments, and so forth.
 
 Firstly, easy will automatically display an error message if you attempt to use a command that doesn't exist.
 

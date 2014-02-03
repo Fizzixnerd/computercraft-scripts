@@ -1,0 +1,117 @@
+--[[
+Hey there!
+
+This framework, which I have conceitedly named "easy" (let me know if you think the name is poorly chosen!), is meant to ease the task of writing simple to moderately complex command line apps in Computer Craft.  It does so by making the task more declarative in nature, and letting the framework take care of details such as argument handling, subcommand calls, error display, help display, and more!
+
+Motivation
+
+I wanted to write a program to control my Stargate (provided by LanteaCraft) via OpenPeripheral's API.  (If you don't know how a stargate works, just know that it's a teleport mod that operates via seven character addresses.  Then, go watch the movie and the show.  It's good.)  I play with someone else who is a non-programmer, and so having the controls be only accessible via an interactive lua session was unacceptably complex.  A command line utility was therefore necessary.  After many weeks of deep meditation and thought, I decided to name this utility `stargate'.
+
+stargate can do a bunch of things, and has a bunch of subcommands (and indeed sub-subcommands!).
+
+`stargate disconnect' (or the shorter `stargate dc') closes the wormhole.
+
+`stargate dial gemrnvd' dials the address gemrnvd (which happens to be my home stargate).
+
+`stargate dial home' dials the same address (see the below).
+
+Obviously, `dial' is a subcommand of `stargate'.
+
+`stargate address add new_home nmemnvd' saves the address nmemnvd and allows you to dial it in the future using `stargate dial new_home'.
+
+`stargate address remove new_home' removes the address from the saved addresses.
+
+`stargate address list' lists all the saved addresses so far.
+
+There are a few others, but you get the idea.
+
+Thanks to OpenPeripheral, I can wrap my stargate using a couple of modems and some networking cable, and implementing the saved addresses isn't too difficult with the Lua io library.  easy does not help you implement the meat of your programs, and so all examples will omit actual implementation details for the most part.  However, there are some general things that all command-line programs ought to have.  This is where easy comes in and helps you out; easy attempts to make it so that you can concentrate _entirely_ on the meat of your program.
+
+Command Parsing and Selection
+
+easy will parse the command and subcommand arguments for you, consuming them and leaving you only having to deal with the remaining arguments, which usually are the only ones your command cares about.
+
+You define the structure of your program using 3 simple classes: A Command is an object which contains:
+1) a name (string).
+2) either:
+     * a handler function of two variables, `self' and `args' (if this command has no subcommands), or
+     * a Commands object which contains at least one Command object.
+3) an optional Help object (see below).
+The Program class actually inherits from Command, and thus have the same structure: either a handler function or a Commands object containing further sub-Command objects.  Commands and Programs differ in how they perform the :execute() method -- specifically how they deal with errors (see below).
+
+Thus, the structure of a `stargate' program as described above could be defined something like:
+--]]
+
+os.loadAPI("easy10a")
+-- I name the files using their version number so that multiple
+-- versions can coexist, and so that changes to the API (which are
+-- likely to happen at this point) don't affect older programs.
+local easy = easy10a
+
+--  This is where you actually wrap the 'physical' Stargate using
+--  OpenPeripheral.  I have ommitted this for the sake of brevity, but
+--  just note that all functions defined below form a closure,
+--  capturing `sg' and thus allowing the direct control of the gate
+--  without passing it as an argument.
+sg = {}
+
+-- I have indented this in a non-standard way to emphasize the
+-- structure and to make it easier to see what is nested inside what.
+-- This is, of course, completely up to the programmers preference.
+stargate =
+   easy.Program(
+      "stargate",
+      easy.Commands(
+	 easy.Command(
+	    "disconnect",
+	    function (self, args)
+	      sg.disconnect()
+	    end
+	 ),
+	 easy.Command(
+	    "dial",
+	    function (self, args)
+	       --- implement ... ---
+	       --
+	       -- `stargate dial home' would result in `args' being a
+	       -- sequence/array containing only the string "home".
+	    end
+	 ),
+	 easy.Command(
+	    "address",
+	    easy.Commands(
+	       easy.Command(
+		  "add",
+		  function (self, args)
+		     -- ...
+		  end
+	       ),
+	       easy.Command(
+		  "remove",
+		  function (self, args)
+		     -- ...
+		  end
+	       ),
+	       easy.Command(
+		  "list",
+		  function (self, args)
+		     -- ...
+		  end
+	       )
+	    )
+	 )
+      )
+   )
+
+stargate:execute()
+
+--[[
+Okay, cool!  If this was all easy did, it would basically be a glorified parser.  However, it offers a number of other useful features.
+
+Documenting Commands and User Errors
+
+easy also contains a Help class to allow you to easily document your programs in a uniform manner, and which easy will use to help your users automatically in common situations.  You can also tell easy how to handle user errors specific to your program.  easy, however, cannot (at this time) help you deal with _programming_ errors gracefully, so test your code.
+
+Firstly, easy will automatically display an error message if you attempt to use a command that doesn't exist.
+
+--]]
