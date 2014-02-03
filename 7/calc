@@ -1,5 +1,5 @@
 -- -*- mode:lua -*-
-os.loadAPI("easy")
+os.loadAPI("easyv1.0a")
 os.loadAPI("log")
 os.loadAPI("arraylib")
 
