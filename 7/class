@@ -10,8 +10,11 @@ function define(base, init)
       for i,v in pairs(base) do
          c[i] = v
       end
-      c._base = base
    end
+
+   -- expose the superclass.
+   c._super = base
+
    -- the class will be the metatable for all its objects,
    -- and they will look up their methods in it.
    c.__index = c
@@ -20,22 +23,26 @@ function define(base, init)
    local mt = {}
    mt.__call = function(class_tbl, ...)
       local obj = {}
-      setmetatable(obj,c)
+      setmetatable(obj, c)
       if init then
-	 init(obj,...)
+	 init(obj, ...)
+	 return obj
       else 
 	 -- make sure that any stuff from the base class is initialized!
-	 if base and base.init then
-	    base.init(obj, ...)
+	 if base and base._init then
+	    base._init(obj, ...)
+	    return obj
 	 end
       end
       return obj
    end
-   c.init = init
+   c._init = init
    c.is_a = function(self, klass)
       local m = getmetatable(self)
       while m do 
-         if m == klass then return true end
+         if m == klass then 
+	    return true 
+	 end
          m = m._base
       end
       return false

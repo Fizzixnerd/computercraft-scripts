@@ -1,0 +1,237 @@
+-- -*- mode: lua -*-
+
+os.loadAPI("src/class")
+os.loadAPI("src/log")
+
+-- change this to wrap your terminal glasses bridge
+local glass = peripheral.wrap("right")
+
+local NullController = class.define(
+   function (self)
+      self.type = "null"
+      self.z = 0
+      self.rotation = 0
+      self.visible = true
+      self.userdata = nil
+      self.clickable = true
+   end
+)
+local function NullController:setZ(z) self.z = z end
+local function NullController:getZ() return self.z end
+local function NullController:getType() return self.type end
+local function NullController:setRotation(angle) self.rotation = angle end
+local function NullController:getRotation() return self.rotation end
+local function NullController:setVisible(vis) self.visible = vis end
+local function NullController:getVisible() return self.visible end
+local function NullController:setUserdata(data) self.userdata = data end
+local function NullController:getUserdata() return self.userdata end
+local function NullController:setClickable(click) self.clickable = click end
+local function NullController:getClickable() return self.clickable end
+
+local ForwardingController = class.define(
+   function (self, controller)
+      self._controller = controller
+   end
+)
+local function ForwardingController.__index(self, i) return self._controller[i] end
+
+local Widget = class.define(
+   function (self, controller, ...)
+      if not controller then
+	 log.fatal("You did not provide a controller for this widget.")
+	 error()
+      elseif type(controller) ~= "table" then
+	 log.fatal("controller provided is not a table.")
+	 error()
+      end
+      self.controller = controller
+      return self
+   end
+)
+Widget.type = "widget:widget"
+local function Widget.__index(self, i) return self._controller[i] end
+local function Widget:tick() return nil end
+
+local WidgetAtom = class.define(Widget)
+WidgetAtom.type = "widget:atom:atom"
+
+local WidgetContainer = class.define(
+   Widget,
+   function (self, controller, content, ...)
+      if not Widget:is_a(content) then
+	 log.fatal("Tried to add a non-Widget to a container.")
+	 error()
+      end
+      self._super._init(self, controller, content, ...)
+      self.content = content or Empty()
+   end
+)
+WidgetContainer.type = "widget:container:container"
+local function WidgetContainer:map(func)
+   if self.content:is_a(WidgetContainer) then
+      self.content:map(func)
+   else
+      func(self.content)
+   end
+end
+
+local Anchor = class.define(WidgetContainer)
+Anchor.type = "widget:container:anchor"
+local function Anchor:__index(self, i)
+   if i == "setX" or i == "setY" or i == "setZ" or i == "setRotation" or i == "setAlignment" or i == "setObjectAnchor" or i == "setScreenAnchor" or i == "setScale" then
+      return function (...) 
+	 self.controller[i](...)
+	 self.content[i](...)
+      end
+   else
+      return self.controller[i]
+   end
+end
+
+local function mkAnchor (factory)
+   return function (self, content, ...)
+      self._super._init(self, factory(...), content)
+      return self
+   end
+end
+
+local function boxGetBoundingBox(self)
+   return {
+      width = self.getWidth(),
+      height = self.getHeight(),
+      top = self.getY(),
+      left = self.getX()
+   }
+end
+
+local Box = class.define(
+   Anchor,
+   mkAnchor(glass.addBox)
+)
+Box.getBoundingBox = boxGetBoundingBox
+
+local GradientBox = class.define(
+   Anchor,
+   mkAnchor(glass.addGradientBox)
+)
+GradientBox.getBoundingBox = boxGetBoundingBox
+
+local function mkAtom (factory)
+   return function (self, ...)
+      self._super._init(self, factory(...))
+      return self
+   end
+end
+
+local Text = class.define(
+   WidgetAtom,
+   mkAtom(glass.addText)
+)
+
+local Fluid = class.define(
+   WidgetAtom,
+   mkAtom(glass.addFluid)
+)
+
+local GradientLine = class.define(
+   WidgetAtom,
+   mkAtom(glass.addGradientLine)
+)
+
+local GradientLineList = class.define(
+   WidgetAtom,
+   mkAtom(glass.addGradientLineList)
+)
+
+local GradientPolyGon = class.define(
+   WidgetAtom,
+   mkAtom(glass.addGradientPolygon)
+)
+
+local GradientQuad = class.define(
+   WidgetAtom,
+   mkAtom(glass.addGradientQuad)
+)
+
+local GradientTriangle = class.define(
+   WidgetAtom,
+   mkAtom(glass.addGradientTriangle)
+)
+
+local Icon = class.define(
+   WidgetAtom,
+   mkAtom(glass.addIcon)
+)
+
+local Line = class.define(
+   WidgetAtom,
+   mkAtom(glass.addLine)
+)
+
+local LineList = class.define(
+   WidgetAtom,
+   mkAtom(glass.addLineList)
+)
+
+local Point = class.define(
+   WidgetAtom,
+   mkAtom(glass.addPoint)
+)
+
+local Polygon = class.define(
+   WidgetAtom,
+   mkAtom(glass.addPolygon)
+)
+
+local Quad = class.define(
+   WidgetAtom,
+   mkAtom(glass.addQuad)
+)
+
+local Triangle = class.define(
+   WidgetAtom,
+   mkAtom(glass.addTriangle)
+)
+   
+-- local Identity = class.define(
+--    WidgetContainer,
+--    function (self, content, ...)
+--       self._super._init(self, NullController(), content, ...)
+--       return self
+--    end
+-- )     
+
+local Empty = class.define(
+   WidgetAtom,
+   function (self)
+      self.controller = NullController()
+      return self
+   end
+)
+Empty.type = "widget:atom:empty"
+        
+-- And so on, for each thing.
+
+--function Locations:fetch(loc)
+--  return self[loc]
+--end
+
+--function Locations:getStart(loc, 
+  
+--local Widget = {locations = Locations}
+--Widget.__index = Widget
+
+--function Widget:new(xsize, ysize, location)
+--  local xStart = Widget.getXStart(location)
+--  local yStart = Widget.getYStart(location)
+--  local boundingBox = glass.addBox(xStart,
+--                                   yStart,
+--                                   xsize,
+--                                   ysize)
+--  local text = glass.addText(xStart + 2,
+--                             yStart + 2, 
+--                             "",
+--                             0xFFFFFF)
+--end
+
+--widget = Widget.new(80, 10, "botr")

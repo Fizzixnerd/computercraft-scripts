@@ -26,5 +26,5 @@ end
 
 function UNREACHABLE (debug_string)
    debug_string = debug_string or ""
-   fatal("This line should never print.  If it does, you have broken something _BADLY_.  Your debug string is: %s")
+   fatal("This line should never print.  If it does, you have broken something _BADLY_.  Your debug string is: " .. debug_string)
 end

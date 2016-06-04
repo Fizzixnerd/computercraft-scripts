@@ -1,0 +1,27 @@
+local sep = ","
+  
+local function parseCSVLineHelper (line, result)
+  local startp,endp = string.find(line, sep)
+  if (startp) then
+    -- hack: concat an empty string to 
+    -- make broken string.sub actually
+    -- return a NEW string, not just a
+    -- slice of the old string
+    table.insert(result, 
+                 string.sub(line, 1, startp-1))
+    return parseCSVLineHelper(string.sub(line, endp+1).."", result)
+  else
+    table.insert(result, line)
+    return result
+  end
+end
+
+function parseCSVLine (line)
+  local result = {}
+  return parseCSVLineHelper(line, result)
+end
+
+local function debug()
+  os.loadAPI("ptable")
+  print (ptable.ptable(parseCSVLine("shitfuck,dick,whore")))
+end

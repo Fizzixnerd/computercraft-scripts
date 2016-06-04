@@ -1,0 +1,122 @@
+-- -*- mode: lua -*-
+
+os.loadAPI("src/class")
+os.loadAPI("src/log")
+
+local Widget = class.define(
+  function (self, controller, ...)
+    self.wType = "widget:widget"
+    self.controller = controller or {}
+    self.tick =
+      function (self)
+        return nil
+      end
+    return self
+  end)
+  
+local function Widget:setX(x)
+  if (self.controller && self.controller.setX) then
+    return self.controller.setX(x)
+  else
+    log.fatal("controller has no `setX' method.")
+    error()
+  end
+end
+
+local function Widget:setY(y)
+  if (self.controller && self.controller.setY) then
+    return self.controller.setY(y)
+  else
+    log.fatal("controller has no `setY' method")
+    error()
+  end
+end
+
+local Empty = class.define(WidgetAtom,
+  function (self, ...)
+    self.wType = "widget:atom:empty"
+    return self
+  end)
+  
+local WidgetAtom = class.define(Widget,
+  function (self, controller, ...)
+    self.wType = "widget:atom:atom"
+    return self
+  end)
+
+local WidgetContainer = class.define(Widget,
+  function (self, content, ...)
+    self.wType = "widget:container:container"
+    if (content) then
+      if (not Widget.is_a(content)) then
+        log.fatal("Tried to add a non-Widget to a container.")
+        error()
+      else
+        self.content = content
+      end
+    else
+      -- content is the empty widget.
+      self.content = Empty()
+    end
+  end)
+        
+local Box = class.define(WidgetContainer,
+  function (self, content, box)
+    self.wType = "widget:container:box"
+    if (box) then
+      self.box = box
+    else
+      log.fatal("No terminalglasses box object given to Box constructor.")
+      error()
+    end
+    self.tick =
+      function (self)
+        return self.content.tick()
+      end
+    return self
+  end)
+
+function Box:setColor(color)
+  return self.box.setColor(color)
+end
+
+-- And so on, for each thing.
+  
+local Text = class.define(WidgetAtom,
+  function (self, text)
+    self.wType = "widget:atom:text"
+    self.text = text
+    return self
+  end)
+  
+function Text:setText(text)
+  return self.text.setText(text)
+end
+
+-- etc...
+
+
+
+--function Locations:fetch(loc)
+--  return self[loc]
+--end
+
+--function Locations:getStart(loc, 
+  
+--local Widget = {locations = Locations}
+--Widget.__index = Widget
+
+--function Widget:new(xsize, ysize, location)
+--  local xStart = Widget.getXStart(location)
+--  local yStart = Widget.getYStart(location)
+--  local boundingBox = glass.addBox(xStart,
+--                                   yStart,
+--                                   xsize,
+--                                   ysize)
+--  local text = glass.addText(xStart + 2,
+--                             yStart + 2, 
+--                             "",
+--                             0xFFFFFF)
+--end
+
+--widget = Widget.new(80, 10, "botr")
