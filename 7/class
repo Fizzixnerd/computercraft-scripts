@@ -43,7 +43,7 @@ function define(base, init)
          if m == klass then 
 	    return true 
 	 end
-         m = m._base
+         m = m._super
       end
       return false
    end
