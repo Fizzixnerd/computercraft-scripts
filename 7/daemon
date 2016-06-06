@@ -1,0 +1,57 @@
+-- -*- mode: lua -*-
+
+os.loadAPI("src/class")
+os.loadAPI("src/log")
+os.loadAPI("connection")
+os.loadAPI("packet")
+
+Daemon = class.define(
+   function (self, daemonName)
+      self.name = daemonName
+      return self
+   end
+)
+
+Client = class.define(
+   Daemon,
+   function (self, clientName, serverName, socket, responseHandlers, timeout)
+      self._super._init(self, clientName)
+      self.serverName = serverName
+      self.socket = socket
+      self.responseHandlers = responseHandlers
+      self.timeout = timeout or 5
+      self.connection = connection.new(self.serverName, self.socket)
+      return self
+   end
+)
+function Client:connect()
+   local response = self.connection:open(self.timeout)
+   if response then
+      return self.responseHandlers[packet.types[response.type]](self, response)
+   else
+      log.error("Attempt to connect to  `" .. self.serverName "' .. timed out.")
+      return nil
+   end
+end
+function Client:disconnect()
+   self.connection:close("disconnect", true)
+end
+
+QueryClient = class.define(Client)
+function QueryClient:query(...) 
+   return self.connection:send("query")
+end
+
+Server = class.define(
+   Daemon,
+   function (self, serverName, socket, requestHandlers)
+      self._super._init(self, serverName)
+      self.socket = socket
+      self.requestHandlers = requestHandlers
+      return self
+   end
+)
+function Server:listen()
+   local pkt, conn = connection.listen(self.socket)
+   return self.requestHandlers[packet.types[pkt.type]](self, pkt, conn)
+end

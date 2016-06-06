@@ -1,0 +1,38 @@
+-- -*- mode: lua -*-
+
+os.loadAPI("src/class")
+os.loadAPI("src/glass/daemon")
+
+Provider = class.define(
+   function (self)
+      function self:provide(...)
+	 return nil
+      end
+      return self
+   end
+)
+
+IdentityProvider = class.define(
+   Provider,
+   function (self, x)
+      function self:provide(...)
+	 return x
+      end
+      return self
+   end
+)
+
+QueryListenerProvider = class.define(
+   Provider,
+   function (self, listener)
+      local success = listener:connect()
+      if not success then
+	 log.error("Listener could not connect.")
+      end
+
+      function self.provide(self, ...)
+	 return listener:query(...)
+      end
+      return self
+   end
+)

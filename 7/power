@@ -1,0 +1,18 @@
+-- -*- mode: lua -*-
+
+os.loadAPI("src/class")
+os.loadAPI("src/log")
+os.loadAPI("src/daemon")
+os.loadAPI("connection")
+os.loadAPI("packet")
+
+local battery = peripheral.wrap("left")
+
+local requestHandlers = {
+   function query(server, pkt, conn)
+      return conn:send("response", battery.getEUStored)
+   end
+}
+
+PowerServer = daemon.Server("power", 1, requestHandlers)
+PowerServer:listen()
