@@ -14,6 +14,7 @@ function define(base, init)
 
    -- expose the superclass.
    c._super = base
+   c._init = init
 
    -- the class will be the metatable for all its objects,
    -- and they will look up their methods in it.
@@ -36,7 +37,6 @@ function define(base, init)
       end
       return obj
    end
-   c._init = init
    c.is_a = function(self, klass)
       local m = getmetatable(self)
       while m do 

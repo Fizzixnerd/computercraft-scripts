@@ -9,10 +9,13 @@ os.loadAPI("packet")
 local battery = peripheral.wrap("left")
 
 local requestHandlers = {
-   function query(server, pkt, conn)
+   query = function(server, pkt, conn)
       return conn:send("response", battery.getEUStored)
    end
 }
 
 PowerServer = daemon.Server("power", 1, requestHandlers)
-PowerServer:listen()
+
+while true do
+   log.debug(PowerServer:listen())
+   sleep(2)

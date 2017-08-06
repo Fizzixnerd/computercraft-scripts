@@ -15,7 +15,7 @@ Daemon = class.define(
 Client = class.define(
    Daemon,
    function (self, clientName, serverName, socket, responseHandlers, timeout)
-      self._super._init(self, clientName)
+      Daemon._init(self, clientName)
       self.serverName = serverName
       self.socket = socket
       self.responseHandlers = responseHandlers
@@ -29,7 +29,7 @@ function Client:connect()
    if response then
       return self.responseHandlers[packet.types[response.type]](self, response)
    else
-      log.error("Attempt to connect to  `" .. self.serverName "' .. timed out.")
+      log.error("Attempt to connect to  `" .. self.serverName .. "' .. timed out.")
       return nil
    end
 end
@@ -37,7 +37,12 @@ function Client:disconnect()
    self.connection:close("disconnect", true)
 end
 
-QueryClient = class.define(Client)
+QueryClient = class.define(
+   Client,
+   function (self, ...)
+      Client._init(self, ...)
+   end
+)
 function QueryClient:query(...) 
    return self.connection:send("query")
 end
@@ -45,7 +50,7 @@ end
 Server = class.define(
    Daemon,
    function (self, serverName, socket, requestHandlers)
-      self._super._init(self, serverName)
+      Daemon._init(self, serverName)
       self.socket = socket
       self.requestHandlers = requestHandlers
       return self
